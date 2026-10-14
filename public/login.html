@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>כניסה למערכת — משכנתא חכמה</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #1b3a57;
+            --navy-deep: #16324c;
+            --muted: #6b7784;
+            --beige: #ead6c6;
+            --page: #f7f3ef;
+            --line: #e7e1db;
+            --danger: #b42318;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            background: var(--page);
+            color: var(--navy);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: inherit; }
+
+        .page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 20px 48px;
+        }
+
+        .back {
+            align-self: flex-start;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 28px;
+        }
+
+        .back:hover { color: var(--navy); }
+
+        .mark {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: var(--navy);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            margin: 8px auto 18px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+        }
+
+        .sub {
+            text-align: center;
+            color: var(--muted);
+            font-size: 16px;
+            margin-bottom: 28px;
+        }
+
+        .card {
+            width: min(460px, 100%);
+            background: #fff;
+            border: 1px solid #efeae4;
+            border-radius: 24px;
+            padding: 28px 24px;
+            box-shadow: 0 10px 30px rgba(27, 58, 87, 0.04);
+        }
+
+        .socials { display: grid; gap: 10px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            border: 0;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: transform .15s ease, background .15s ease;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.65; cursor: wait; transform: none; }
+
+        .btn-social {
+            background: #fff;
+            border: 1.5px solid var(--line);
+            color: var(--navy);
+            border-radius: 999px;
+            padding: 13px 16px;
+            font-size: 15px;
+        }
+
+        .btn-social:hover { background: #faf7f4; }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: #9aa4ae;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            margin: 22px 0;
+        }
+
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        .field { margin-bottom: 16px; }
+
+        .field-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 12px;
+        }
+
+        label { font-size: 14px; font-weight: 700; }
+
+        .linkish {
+            background: none;
+            border: 0;
+            color: var(--muted);
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .input { position: relative; }
+
+        .input svg {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8b97a3;
+            pointer-events: none;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"],
+        input[type="text"] {
+            width: 100%;
+            border: 1.5px solid var(--line);
+            border-radius: 14px;
+            padding: 13px 44px 13px 14px;
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--navy);
+            background: #fff;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--navy); }
+
+        .error {
+            display: none;
+            color: var(--danger);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .error.show { display: block; }
+
+        .btn-navy {
+            background: var(--navy);
+            color: #fff;
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+
+        .switch {
+            text-align: center;
+            margin-top: 22px;
+            color: var(--muted);
+            font-size: 14.5px;
+        }
+
+        .switch button {
+            color: var(--navy);
+            font-weight: 700;
+            background: none;
+            border: 0;
+            font-family: inherit;
+            font-size: inherit;
+            cursor: pointer;
+        }
+
+        .hidden { display: none; }
+
+        .phone-copy {
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.7;
+            text-align: center;
+            margin-bottom: 22px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <a class="back" href="/">חזרה לדף הבית</a>
+        <div class="mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
+                <path d="M10 17l5-5-5-5"/>
+                <path d="M15 12H3"/>
+            </svg>
+        </div>
+        <section id="auth-panel">
+            <h1 id="auth-title">ברוכים השבים</h1>
+            <p class="sub" id="auth-sub">התחברו לחשבון שלכם</p>
+            <div class="card">
+                <div class="socials">
+                    <button class="btn btn-social" type="button" data-provider="google">המשך עם Google</button>
+                    <button class="btn btn-social" type="button" data-provider="apple">המשך עם Apple</button>
+                </div>
+                <div class="divider">או</div>
+                <form id="auth-form" novalidate>
+                    <div class="field">
+                        <div class="field-head"><label for="email">אימייל</label></div>
+                        <div class="input">
+                            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="field-head">
+                            <label for="password">סיסמה</label>
+                            <button class="linkish" type="button" id="forgot">שכחת סיסמה?</button>
+                        </div>
+                        <div class="input">
+                            <input id="password" name="password" type="password" autocomplete="current-password" required>
+                        </div>
+                    </div>
+                    <div class="field hidden" id="confirm-wrap">
+                        <div class="field-head"><label for="confirm">אימות סיסמה</label></div>
+                        <div class="input">
+                            <input id="confirm" name="confirm" type="password" autocomplete="new-password">
+                        </div>
+                    </div>
+                    <p class="error" id="auth-error"></p>
+                    <button class="btn btn-navy" type="submit" id="auth-submit">כניסה</button>
+                </form>
+            </div>
+            <p class="switch" id="auth-switch">אין לכם חשבון? <button type="button" id="to-signup">הרשמה</button></p>
+        </section>
+        <section id="phone-panel" class="hidden">
+            <h1>כמעט שם</h1>
+            <p class="sub">רק פרט אחרון לפני שנמשיך</p>
+            <div class="card">
+                <p class="phone-copy">רק עוד פרט אחד קטן כדי שנשלח לך את ניתוח המשכנתא:</p>
+                <form id="phone-form" novalidate>
+                    <div class="field">
+                        <div class="field-head"><label for="phone">מספר טלפון</label></div>
+                        <div class="input">
+                            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="050-000-0000" required>
+                        </div>
+                    </div>
+                    <p class="error" id="phone-error"></p>
+                    <button class="btn btn-navy" type="submit">שמירה והמשך</button>
+                </form>
+            </div>
+        </section>
+        <section id="done-panel" class="hidden">
+            <h1>החשבון מוכן</h1>
+            <p class="sub">שמרנו את הפרטים. בשלב הבא נחבר את המערכת עצמה.</p>
+            <div class="card">
+                <a class="btn btn-navy" href="/" style="text-decoration:none;">חזרה לדף הבית</a>
+            </div>
+        </section>
+    </div>
+    <script src="auth-config.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js" async></script>
+    <script>
+        const authPanel = document.getElementById('auth-panel');
+        const phonePanel = document.getElementById('phone-panel');
+        const donePanel = document.getElementById('done-panel');
+        const title = document.getElementById('auth-title');
+        const sub = document.getElementById('auth-sub');
+        const confirmWrap = document.getElementById('confirm-wrap');
+        const confirmInput = document.getElementById('confirm');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('auth-submit');
+        const switchEl = document.getElementById('auth-switch');
+        const forgot = document.getElementById('forgot');
+        const authError = document.getElementById('auth-error');
+        const phoneError = document.getElementById('phone-error');
+        let mode = new URLSearchParams(location.search).get('mode') === 'signup' ? 'signup' : 'login';
+        function setMode(next) {
+            mode = next;
+            const signup = mode === 'signup';
+            title.textContent = signup ? 'יצירת חשבון' : 'ברוכים השבים';
+            sub.textContent = signup ? 'נרשמים ומתחילים לעקוב אחרי המשכנתא' : 'התחברו לחשבון שלכם';
+            confirmWrap.classList.toggle('hidden', !signup);
+            confirmInput.required = signup;
+            passwordInput.autocomplete = signup ? 'new-password' : 'current-password';
+            submitBtn.textContent = signup ? 'הרשמה' : 'כניסה';
+            forgot.style.visibility = signup ? 'hidden' : 'visible';
+            switchEl.innerHTML = signup
+                ? 'כבר יש לכם חשבון? <button type="button" id="to-login">כניסה</button>'
+                : 'אין לכם חשבון? <button type="button" id="to-signup">הרשמה</button>';
+            switchEl.querySelector('button').addEventListener('click', () => setMode(signup ? 'login' : 'signup'));
+            authError.classList.remove('show');
+        }
+        function showPhone() {
+            authPanel.classList.add('hidden');
+            phonePanel.classList.remove('hidden');
+            document.getElementById('phone').focus();
+        }
+        function showError(el, message) {
+            el.textContent = message;
+            el.classList.toggle('show', Boolean(message));
+        }
+        setMode(mode);
+        const config = window.AUTH_CONFIG || {};
+        const googleBtn = document.querySelector('[data-provider="google"]');
+        const appleBtn = document.querySelector('[data-provider="apple"]');
+        function waitFor(check, timeoutMs) {
+            return new Promise((resolve, reject) => {
+                if (check()) return resolve();
+                const started = Date.now();
+                const timer = setInterval(() => {
+                    if (check()) { clearInterval(timer); resolve(); }
+                    else if (Date.now() - started > timeoutMs) { clearInterval(timer); reject(new Error('timeout')); }
+                }, 40);
+            });
+        }
+        function finishSocialLogin(provider, profile) {
+            sessionStorage.setItem('authProvider', provider);
+            if (profile.email) sessionStorage.setItem('authEmail', profile.email);
+            if (profile.name) sessionStorage.setItem('authName', profile.name);
+            showPhone();
+        }
+        async function signInWithGoogle() {
+            const clientId = (config.googleClientId || '').trim();
+            if (!clientId) {
+                showError(authError, 'חסר Google Client ID. הדביקו אותו בקובץ auth-config.js אחרי יצירת OAuth Client מסוג Web ב-Google Cloud.');
+                return;
+            }
+            showError(authError, '');
+            googleBtn.disabled = true;
+            try {
+                await waitFor(() => window.google && google.accounts && google.accounts.oauth2, 8000);
+                await new Promise((resolve, reject) => {
+                    const tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: clientId,
+                        scope: 'openid email profile',
+                        callback: async (response) => {
+                            if (!response || response.error) {
+                                reject(new Error(response.error === 'popup_closed_by_user' ? 'canceled' : 'google_error'));
+                                return;
+                            }
+                            const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                                headers: { Authorization: 'Bearer ' + response.access_token }
+                            });
+                            const profile = await userRes.json();
+                            finishSocialLogin('google', { email: profile.email, name: profile.name });
+                            resolve();
+                        },
+                        error_callback: (err) => reject(new Error(err && err.type === 'popup_closed' ? 'canceled' : 'google_error'))
+                    });
+                    tokenClient.requestAccessToken({ prompt: 'select_account' });
+                });
+            } catch (err) {
+                showError(authError, err && err.message === 'canceled' ? 'בחירת החשבון בגוגל בוטלה. אפשר לנסות שוב.' : 'לא הצלחנו להתחבר עם Google.');
+            } finally {
+                googleBtn.disabled = false;
+            }
+        }
+        async function signInWithApple() {
+            const clientId = (config.appleClientId || '').trim();
+            if (!clientId) {
+                showError(authError, 'חסר Apple Service ID. הדביקו אותו בקובץ auth-config.js.');
+                return;
+            }
+            showError(authError, '');
+            appleBtn.disabled = true;
+            try {
+                await waitFor(() => window.AppleID && AppleID.auth, 8000);
+                AppleID.auth.init({
+                    clientId,
+                    scope: 'name email',
+                    redirectURI: (config.appleRedirectURI || (location.origin + location.pathname)).trim(),
+                    usePopup: true
+                });
+                const data = await AppleID.auth.signIn();
+                const nameParts = data && data.user && data.user.name;
+                finishSocialLogin('apple', {
+                    email: (data && data.user && data.user.email) || '',
+                    name: nameParts ? [nameParts.firstName, nameParts.lastName].filter(Boolean).join(' ') : ''
+                });
+            } catch (err) {
+                showError(authError, 'לא הצלחנו להתחבר עם Apple.');
+            } finally {
+                appleBtn.disabled = false;
+            }
+        }
+        googleBtn.addEventListener('click', signInWithGoogle);
+        appleBtn.addEventListener('click', signInWithApple);
+        document.getElementById('auth-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = passwordInput.value;
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showError(authError, 'נא להזין כתובת אימייל תקינה.');
+                return;
+            }
+            if (password.length < 6) {
+                showError(authError, 'הסיסמה צריכה להיות באורך 6 תווים לפחות.');
+                return;
+            }
+            if (mode === 'signup' && password !== confirmInput.value) {
+                showError(authError, 'אימות הסיסמה אינו תואם.');
+                return;
+            }
+            sessionStorage.setItem('authEmail', email);
+            showPhone();
+        });
+        forgot.addEventListener('click', () => {
+            showError(authError, 'בשלב הדמו אין איפוס סיסמה. אפשר להמשיך עם הרשמה מחדש.');
+        });
+        document.getElementById('phone-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const phone = document.getElementById('phone').value.replace(/[\s-]/g, '');
+            if (!/^05\d{8}$/.test(phone)) {
+                showError(phoneError, 'נא להזין מספר נייד ישראלי תקין, למשל 050-123-4567.');
+                return;
+            }
+            sessionStorage.setItem('authPhone', phone);
+            phonePanel.classList.add('hidden');
+            donePanel.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
