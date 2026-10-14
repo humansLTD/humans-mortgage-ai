@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>האזור האישי — משכנתא חכמה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a class="brand" href="/app.html">
+                <span class="brand-mark">מ</span>
+                משכנתא חכמה
+            </a>
+            <div class="top-actions">
+                <span id="who"></span>
+                <a class="btn btn-ghost" href="/" id="logout">יציאה</a>
+            </div>
+        </div>
+    </header>
+    <main class="page">
+        <div class="wrap">
+            <h1>שלום, מה עושים היום?</h1>
+            <p class="lede">אפשר לתכנן תמהיל למשכנתא חדשה, או לפקח על משכנתא קיימת לפי דוח יתרות לסילוק.</p>
+            <div class="choice-grid">
+                <article class="choice choice-light">
+                    <h2>לתכנן משכנתא</h2>
+                    <p>שאלון קצר ועמוק על הנכס, ההכנסה ורמת הסיכון. אחר כך המערכת מרכיבה תמהיל מדויק עם קל"צ, פריים ומשתנה — כולל מתי כל עוגן מתעדכן.</p>
+                    <a class="btn btn-navy" href="/plan.html">התחלת שאלון</a>
+                </article>
+                <article class="choice choice-dark">
+                    <h2>לפקח על המשכנתא</h2>
+                    <p>העלו דוח יתרות מהבנק. נציג את המסלולים, נוריד קרן וריבית כל חודש, ונעדכן עוגן רק בתאריך החוזי — לא לפני.</p>
+                    <a class="btn btn-beige" href="/supervise.html">העלאת דוח יתרות</a>
+                </article>
+            </div>
+        </div>
+    </main>
+    <script src="/js/habona.js"></script>
+    <script>
+        Habona.requireAuth();
+        const who = sessionStorage.getItem("authEmail") || sessionStorage.getItem("authPhone") || "";
+        document.getElementById("who").textContent = who;
+        document.getElementById("logout").addEventListener("click", (e) => {
+            e.preventDefault();
+            sessionStorage.clear();
+            location.href = "/";
+        });
+    </script>
+</body>
+</html>
