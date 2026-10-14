@@ -3,127 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>פיקוח משכנתא — משכנתא חכמה</title>
+    <title>מפקח משכנתא — משכנתא חכמה</title>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/app.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
-    <header class="topbar">
-        <div class="topbar-inner">
-            <a class="brand" href="/app.html"><span class="brand-mark">מ</span> משכנתא חכמה</a>
-            <a class="btn btn-ghost" href="/app.html">חזרה</a>
-        </div>
-    </header>
-    <main class="page">
-        <div class="wrap">
-            <h1>פיקוח על המשכנתא</h1>
-            <p class="lede">העלו דוח יתרות לסילוק. המערכת מציגה מסלולים, מורידה קרן וריבית כל חודש, ומעדכנת עוגן רק ביום העדכון החוזי. פריים מתעדכן כשריבית בנק ישראל משתנה.</p>
+    <div class="shell" id="shell">
+        <main class="content">
+            <div class="head-row page-head">
+                <div>
+                    <h1>מפקח משכנתא</h1>
+                    <p>עקוב אחר המשכנתא שלך וקבל ניתוח AI</p>
+                </div>
+                <button class="btn btn-navy" id="add-btn" type="button">+ הוספת משכנתא</button>
+            </div>
 
-            <section class="card" id="upload-card">
+            <section id="adder" class="hidden">
                 <div class="drop" id="drop">
                     <input id="file" type="file" accept=".pdf,image/*">
-                    <p><strong>לחצו להעלאת דוח יתרות לסילוק</strong></p>
-                    <p class="meta">PDF, PNG או JPG. בשלב זה הקריאה היא דמו לפי מבנה דוח בנקאי טיפוסי.</p>
+                    <strong>העלו דוח יתרות לסילוק (PDF)</strong>
+                    <p class="muted">המערכת תחלץ מסלולים, ריביות ויתרות מהטקסט בדוח. אפשר לתקן לפני שמירה.</p>
                 </div>
+                <p class="parse-note" id="status"></p>
+                <form class="panel" id="review"></form>
             </section>
 
-            <section id="board" class="hidden"></section>
-        </div>
-    </main>
+            <div id="list"></div>
+        </main>
+    </div>
     <script src="/js/habona.js"></script>
+    <script src="/js/shell.js"></script>
     <script>
-        Habona.requireAuth();
-        let state = JSON.parse(localStorage.getItem("habonaMortgage") || "null");
-        let asOf = state?.asOf || Habona.MARKET.asOf;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        mountShell("watch");
+        const db = Habona.loadDb();
+        const adder = document.getElementById("adder");
+        const review = document.getElementById("review");
+        const status = document.getElementById("status");
+        let draft = null;
 
-        const drop = document.getElementById("drop");
-        const file = document.getElementById("file");
-        drop.addEventListener("click", () => file.click());
-        file.addEventListener("change", () => {
-            if (!file.files.length) return;
-            const report = Habona.demoReport(Habona.MARKET.asOf);
-            report.fileName = file.files[0].name;
-            state = report;
-            asOf = report.reportDate;
-            save();
-            render();
+        function renderList() {
+            const list = document.getElementById("list");
+            if (!db.mortgages.length) {
+                list.innerHTML = `<div class="panel"><p>אין עדיין משכנתאות. לחצו על הוספת משכנתא והעלו דוח יתרות.</p></div>`;
+                return;
+            }
+            list.innerHTML = db.mortgages.map((m) => {
+                const t = Habona.totals(m);
+                return `<a class="loan-card" href="/mortgage.html?id=${m.id}">
+                    <div>
+                        <strong>${m.bank}</strong>
+                        <div class="muted">${m.startDate || ""} · ${t.trackCount} מסלולים</div>
+                        <div class="bar"><span style="width:${t.paidRatio}%"></span></div>
+                        <div class="muted">הוחזר עד כה ${t.paidRatio}%</div>
+                    </div>
+                    <div style="text-align:left">
+                        <div class="muted">יתרה</div>
+                        <strong>${Habona.money(t.remaining)}</strong>
+                        <div class="muted">תשלום חודשי ${Habona.money(t.payment)}</div>
+                    </div>
+                </a>`;
+            }).join("");
+        }
+
+        function trackFields(track, i) {
+            return `
+              <div class="panel" style="margin-top:10px">
+                <div class="form-row">
+                    <div><label>שם מסלול</label><input name="t_name_${i}" value="${track.name || ""}"></div>
+                    <div><label>ריבית %</label><input name="t_rate_${i}" type="number" step="0.01" value="${track.annualRate || 0}"></div>
+                </div>
+                <div class="form-row">
+                    <div><label>סכום מקורי</label><input name="t_orig_${i}" type="number" value="${track.originalPrincipal || 0}"></div>
+                    <div><label>יתרה נוכחית</label><input name="t_left_${i}" type="number" value="${track.principal || 0}"></div>
+                </div>
+                <div class="form-row">
+                    <div><label>החזר חודשי</label><input name="t_pay_${i}" type="number" value="${track.payment || 0}"></div>
+                    <div><label>שנים</label><input name="t_years_${i}" type="number" value="${track.years || 15}"></div>
+                </div>
+              </div>`;
+        }
+
+        function showReview(parsed) {
+            draft = parsed;
+            const tracks = parsed.tracks.length ? parsed.tracks : [{ name: "מסלול 1", annualRate: 0, originalPrincipal: 0, principal: 0, payment: 0, years: 15 }];
+            parsed.tracks = tracks;
+            review.innerHTML = `
+                <p class="parse-note">בדקו שהמספרים מהדוח נכונים ואז שמרו. אם שדה חסר — השלימו ידנית.</p>
+                <div class="form-row">
+                    <div><label>בנק</label><input name="bank" value="${parsed.bank || ""}"></div>
+                    <div><label>תאריך התחלה</label><input name="startDate" value="${parsed.startDate || ""}"></div>
+                </div>
+                <div class="form-row">
+                    <div><label>תקופה כוללת (שנים)</label><input name="years" type="number" value="${parsed.years || 30}"></div>
+                </div>
+                ${tracks.map(trackFields).join("")}
+                <div style="margin-top:14px"><button class="btn btn-navy" type="submit">שמירת משכנתא</button></div>
+            `;
+        }
+
+        document.getElementById("add-btn").onclick = () => adder.classList.toggle("hidden");
+        document.getElementById("drop").onclick = () => document.getElementById("file").click();
+        document.getElementById("file").onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            status.textContent = "קורא את הדוח...";
+            try {
+                let text = "";
+                if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+                    text = await Habona.extractPdfText(file);
+                } else {
+                    text = file.name;
+                }
+                const parsed = Habona.parseReportText(text);
+                parsed.fileName = file.name;
+                if (!parsed.tracks.length) {
+                    status.textContent = "נמצא קובץ, אבל לא זוהו מסלולים אוטומטית. מלאו ידנית לפי הדוח.";
+                } else {
+                    status.textContent = `חולצו ${parsed.tracks.length} מסלולים מתוך ${file.name}. אשרו לפני שמירה.`;
+                }
+                showReview(parsed);
+            } catch (err) {
+                status.textContent = "לא הצלחנו לקרוא PDF. מלאו את הפרטים ידנית.";
+                showReview({ bank: "", startDate: "", years: 30, tracks: [] });
+            }
+        };
+
+        review.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const data = new FormData(review);
+            const tracks = [];
+            for (let i = 0; i < 8; i += 1) {
+                const name = data.get("t_name_" + i);
+                if (!name) continue;
+                const years = Number(data.get("t_years_" + i) || 15);
+                const meta = Habona.detectKind(String(name));
+                tracks.push({
+                    id: Habona.uid(),
+                    name,
+                    kind: meta.kind,
+                    cpiLinked: meta.cpi,
+                    annualRate: Number(data.get("t_rate_" + i) || 0),
+                    originalPrincipal: Number(data.get("t_orig_" + i) || 0),
+                    principal: Number(data.get("t_left_" + i) || 0),
+                    payment: Number(data.get("t_pay_" + i) || 0),
+                    years,
+                    monthsTotal: years * 12,
+                    monthsElapsed: 0,
+                    resetEveryMonths: meta.kind.startsWith("variable") ? 24 : null,
+                    nextResetDate: meta.kind.startsWith("variable") ? Habona.addMonths(Habona.MARKET.asOf, 24) : null,
+                });
+            }
+            db.mortgages.push({
+                id: Habona.uid(),
+                bank: data.get("bank"),
+                startDate: data.get("startDate"),
+                years: Number(data.get("years") || 30),
+                tracks,
+            });
+            Habona.saveDb(db);
+            location.href = "/supervise.html";
         });
 
-        function save() {
-            localStorage.setItem("habonaMortgage", JSON.stringify({ ...state, asOf }));
-        }
-
-        function totals() {
-            const tracks = state.tracks.map((track) => {
-                const monthsLeft = track.monthsTotal - track.monthsElapsed;
-                const payment = Habona.monthlyPayment(track.principal, track.annualRate, monthsLeft);
-                return { ...track, payment };
-            });
-            state.tracks = tracks;
-            return Habona.summarize(tracks);
-        }
-
-        function resetLabel(track) {
-            if (track.kind === "prime") return "מתעדכן עם ריבית הפריים בשוק";
-            if (!track.nextResetDate) return "אין עדכון עוגן — ריבית קבועה";
-            if (asOf < track.nextResetDate) return `העוגן לא מתעדכן עד ${track.nextResetDate}`;
-            return `תאריך עדכון עוגן: ${track.nextResetDate}`;
-        }
-
-        function render() {
-            if (!state) return;
-            document.getElementById("upload-card").classList.add("hidden");
-            const sum = totals();
-            const board = document.getElementById("board");
-            board.classList.remove("hidden");
-            board.innerHTML = `
-                <div class="kpis">
-                    <div class="kpi"><span>יתרת חוב</span><strong>${Habona.money(sum.principal)}</strong></div>
-                    <div class="kpi"><span>החזר חודשי</span><strong>${Habona.money(sum.payment)}</strong></div>
-                    <div class="kpi"><span>מסלולים</span><strong>${sum.trackCount}</strong></div>
-                    <div class="kpi"><span>נכון ליום</span><strong>${asOf}</strong></div>
-                </div>
-                <div class="card">
-                    <p class="meta">שוק לדוגמה (${Habona.MARKET.asOf}): פריים ${Habona.pct(Habona.MARKET.prime)} · בנק ישראל ${Habona.pct(Habona.MARKET.boiRate)} · עוגן לא צמוד ${Habona.pct(Habona.MARKET.anchors.variable_unlinked.rate)}</p>
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-                        <button class="btn btn-navy" id="month" type="button">סימולציית חודש הבא</button>
-                        <button class="btn btn-beige" id="market" type="button">החלת מצב שוק נוכחי</button>
-                    </div>
-                </div>
-                <div class="tracks">
-                    ${state.tracks.map((track) => `
-                        <article class="track">
-                            <div class="track-head">
-                                <strong>${track.name}</strong>
-                                <span class="pill ${track.nextResetDate && asOf < track.nextResetDate ? "ok" : "warn"}">${resetLabel(track)}</span>
-                            </div>
-                            <div class="meta">
-                                יתרה ${Habona.money(track.principal)} · ריבית נוכחית ${Habona.pct(track.annualRate)} · החזר ${Habona.money(track.payment || 0)}
-                                ${track.lastPrincipalPaid ? `<br>בחודש האחרון: קרן ${Habona.money(track.lastPrincipalPaid)} · ריבית ${Habona.money(track.lastInterest)}` : ""}
-                            </div>
-                        </article>
-                    `).join("")}
-                </div>
-            `;
-            document.getElementById("month").onclick = () => {
-                asOf = Habona.addMonths(asOf, 1);
-                state.tracks = state.tracks.map((track) => Habona.stepMonth(track, Habona.MARKET, asOf));
-                save();
-                render();
-            };
-            document.getElementById("market").onclick = () => {
-                state.tracks = state.tracks.map((track) => {
-                    if (Habona.shouldResetAnchor(track, asOf)) {
-                        if (track.kind === "prime") track.annualRate = Habona.MARKET.prime + (track.spread || 0);
-                    }
-                    return track;
-                });
-                save();
-                render();
-            };
-        }
-
-        if (state) render();
+        renderList();
     </script>
 </body>
 </html>

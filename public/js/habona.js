@@ -223,6 +223,122 @@ const Habona = (() => {
     }
   }
 
+  function loadDb() {
+    const raw = localStorage.getItem("habonaDb");
+    if (raw) return JSON.parse(raw);
+    return { mortgages: [] };
+  }
+
+  function saveDb(db) {
+    localStorage.setItem("habonaDb", JSON.stringify(db));
+  }
+
+  function uid() {
+    return "m" + Math.random().toString(36).slice(2, 9);
+  }
+
+  function numberFrom(text) {
+    if (!text) return 0;
+    const clean = String(text).replace(/[^\d.]/g, "");
+    return Number(clean) || 0;
+  }
+
+  function detectBank(text) {
+    if (/מזרחי|טפחות/.test(text)) return 'בנק מזרחי-טפחות בע"מ';
+    if (/לאומי/.test(text)) return "בנק לאומי";
+    if (/הפועלים/.test(text)) return "בנק הפועלים";
+    if (/דיסקונט/.test(text)) return "בנק דיסקונט";
+    if (/הבינלאומי/.test(text)) return "הבנק הבינלאומי";
+    if (/ירושלים/.test(text)) return "בנק ירושלים";
+    return "משכנתא";
+  }
+
+  function detectKind(text) {
+    if (/פריים/.test(text)) return { kind: "prime", name: "פריים", cpi: false };
+    if (/קל.?צ|קבועה לא צמודה/.test(text)) return { kind: "fixed_unlinked", name: 'קל"צ', cpi: false };
+    if (/קבועה צמודה|קל.?צ צמוד/.test(text)) return { kind: "fixed_cpi", name: "קבועה צמודה למדד", cpi: true };
+    if (/משתנה/.test(text) && /מדד|צמוד/.test(text)) return { kind: "variable_cpi", name: "משתנה צמודה למדד", cpi: true };
+    if (/משתנה/.test(text)) return { kind: "variable_unlinked", name: "משתנה לא צמודה", cpi: false };
+    return { kind: "variable_cpi", name: "מסלול", cpi: /מדד|צמוד/.test(text) };
+  }
+
+  function parseReportText(text) {
+    const flat = text.replace(/\u00a0/g, " ");
+    const bank = detectBank(flat);
+    const dateMatch = flat.match(/(\d{1,2}[./]\d{1,2}[./]\d{2,4})/);
+    const yearMatch = flat.match(/(\d{1,2})\s*שנ/);
+    const amounts = [...flat.matchAll(/(\d{1,3}(?:,\d{3})+|\d{4,})(?:\.\d+)?/g)]
+      .map((m) => Number(m[1].replace(/,/g, "")))
+      .filter((n) => n >= 1000 && n < 20000000);
+    const rates = [...flat.matchAll(/(\d{1,2}(?:[.,]\d{1,3})?)\s*%/g)]
+      .map((m) => Number(m[1].replace(",", ".")))
+      .filter((n) => n > 0 && n < 20);
+    const monthly = [...flat.matchAll(/(?:החזר|תשלום)[^\d]{0,12}(\d{1,3}(?:,\d{3})*)/g)]
+      .map((m) => Number(m[1].replace(/,/g, "")));
+
+    const blocks = flat.split(/\n+/);
+    const tracks = [];
+    blocks.forEach((line, i) => {
+      if (!/משתנה|פריים|קל.?צ|קבועה|צמוד|מדד/.test(line)) return;
+      const windowText = blocks.slice(Math.max(0, i - 2), i + 4).join(" ");
+      const meta = detectKind(line + " " + windowText);
+      const lineRates = [...windowText.matchAll(/(\d{1,2}(?:[.,]\d{1,3})?)\s*%/g)].map((m) => Number(m[1].replace(",", ".")));
+      const lineAmounts = [...windowText.matchAll(/(\d{1,3}(?:,\d{3})+)/g)].map((m) => Number(m[1].replace(/,/g, "")));
+      const years = Number((windowText.match(/(\d{1,2})\s*שנ/) || [])[1]) || 15;
+      if (!lineAmounts.length && !lineRates.length) return;
+      tracks.push({
+        id: uid(),
+        name: meta.name,
+        kind: meta.kind,
+        cpiLinked: meta.cpi,
+        annualRate: lineRates[0] || rates[tracks.length] || 0,
+        originalPrincipal: lineAmounts[0] || 0,
+        principal: lineAmounts[1] != null ? lineAmounts[1] : (lineAmounts[0] || 0),
+        payment: lineAmounts.find((n) => n < 20000) || 0,
+        years,
+        monthsTotal: years * 12,
+        monthsElapsed: 0,
+      });
+    });
+
+    const uniqueTracks = tracks.filter((track, index, list) =>
+      index === list.findIndex((other) => other.name === track.name && other.annualRate === track.annualRate && other.originalPrincipal === track.originalPrincipal)
+    );
+
+    return {
+      id: uid(),
+      bank,
+      startDate: dateMatch ? dateMatch[1].replace(/\//g, ".") : "",
+      years: Number(yearMatch ? yearMatch[1] : (uniqueTracks[0] && uniqueTracks[0].years) || 30),
+      raw: flat.slice(0, 4000),
+      tracks: uniqueTracks,
+      parsedMonthly: monthly[0] || uniqueTracks.reduce((s, t) => s + (t.payment || 0), 0),
+      parsedAmounts: amounts.slice(0, 12),
+      parsedRates: rates.slice(0, 12),
+    };
+  }
+
+  async function extractPdfText(file) {
+    if (!window.pdfjsLib) throw new Error("pdfjs");
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = "";
+    for (let i = 1; i <= pdf.numPages; i += 1) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map((item) => item.str).join(" ") + "\n";
+    }
+    return text;
+  }
+
+  function totals(mortgage) {
+    const remaining = mortgage.tracks.reduce((s, t) => s + Number(t.principal || 0), 0);
+    const original = mortgage.tracks.reduce((s, t) => s + Number(t.originalPrincipal || t.principal || 0), 0);
+    const payment = mortgage.tracks.reduce((s, t) => s + Number(t.payment || 0), 0);
+    const paidRatio = original > 0 ? Math.min(100, Math.round(((original - remaining) / original) * 100)) : 0;
+    return { remaining, original, payment, paidRatio, trackCount: mortgage.tracks.length };
+  }
+
   return {
     MARKET,
     money,
@@ -235,5 +351,13 @@ const Habona = (() => {
     requireAuth,
     shouldResetAnchor,
     addMonths,
+    loadDb,
+    saveDb,
+    uid,
+    parseReportText,
+    extractPdfText,
+    totals,
+    detectKind,
   };
 })();
+

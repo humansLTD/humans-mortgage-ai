@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משכנתא — משכנתא חכמה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="shell" id="shell">
+        <main class="content" id="main"></main>
+    </div>
+    <script src="/js/habona.js"></script>
+    <script src="/js/shell.js"></script>
+    <script>
+        mountShell("watch");
+        const id = new URLSearchParams(location.search).get("id");
+        const db = Habona.loadDb();
+        const m = db.mortgages.find((x) => x.id === id);
+        const main = document.getElementById("main");
+        if (!m) {
+            main.innerHTML = "<p>המשכנתא לא נמצאה.</p>";
+        } else {
+            const t = Habona.totals(m);
+            const colors = ["#1d4f73", "#7ea0b8", "#c7b29a"];
+            main.innerHTML = `
+                <div class="head-row page-head">
+                    <div>
+                        <h1>${m.bank}</h1>
+                        <p>התחיל ב-${m.startDate || "—"} · ${m.years || ""} שנה</p>
+                    </div>
+                    <a class="btn btn-navy" href="/supervise.html">+ הוספת מסלול</a>
+                </div>
+                <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+                    <div class="kpi"><div class="label">סכום מקורי</div><div class="value">${Habona.money(t.original)}</div></div>
+                    <div class="kpi"><div class="label">יתרה נוכחית</div><div class="value">${Habona.money(t.remaining)}</div></div>
+                    <div class="kpi"><div class="label">החזר חודשי</div><div class="value">${Habona.money(t.payment)}</div></div>
+                    <div class="kpi navy"><div class="label">מסלולים</div><div class="value">${t.trackCount}</div></div>
+                </div>
+                <div class="charts">
+                    <div class="panel">
+                        <h2>פילוח מסלולים</h2>
+                        <canvas id="pie" height="180"></canvas>
+                        <div class="legend" id="legend"></div>
+                    </div>
+                    <div class="panel">
+                        <h2>יתרת המשכנתא לאורך זמן</h2>
+                        <canvas id="line" height="180"></canvas>
+                    </div>
+                </div>
+                <h2 style="margin:18px 0 10px">מסלולי המשכנתא</h2>
+                <div id="tracks"></div>
+            `;
+            document.getElementById("legend").innerHTML = m.tracks.map((track, i) =>
+                `<div><span class="dot" style="background:${colors[i % colors.length]}"></span>${track.name} · ${Habona.money(track.originalPrincipal || track.principal)}</div>`
+            ).join("");
+            document.getElementById("tracks").innerHTML = m.tracks.map((track, i) => `
+                <article class="track-card">
+                    <div class="head-row">
+                        <div>
+                            <span class="dot" style="background:${colors[i % colors.length]}"></span>
+                            <strong>${track.name}</strong>
+                            <div class="muted">ריבית ${Habona.pct(track.annualRate)} · ${track.years || ""} שנה</div>
+                        </div>
+                        <button class="btn-danger" data-del="${track.id}" type="button">מחיקה</button>
+                    </div>
+                    <div class="track-grid">
+                        <div><div class="muted">סכום מקורי</div><strong>${Habona.money(track.originalPrincipal || 0)}</strong></div>
+                        <div><div class="muted">יתרה</div><strong>${Habona.money(track.principal || 0)}</strong></div>
+                        <div><div class="muted">תשלום חודשי</div><strong>${Habona.money(track.payment || 0)}</strong></div>
+                    </div>
+                </article>
+            `).join("");
+
+            new Chart(document.getElementById("pie"), {
+                type: "doughnut",
+                data: {
+                    labels: m.tracks.map((x) => x.name),
+                    datasets: [{ data: m.tracks.map((x) => Number(x.originalPrincipal || x.principal || 0)), backgroundColor: colors }]
+                },
+                options: { plugins: { legend: { display: false } }, cutout: "68%" }
+            });
+            const startYear = Number(String(m.startDate || "2011").match(/\d{4}/)) || 2011;
+            const labels = [];
+            const series = [];
+            for (let y = startYear; y <= startYear + Number(m.years || 30); y += 1) {
+                labels.push(String(y));
+                const progress = (y - startYear) / Math.max(1, Number(m.years || 30));
+                series.push(Math.max(0, t.original * (1 - progress)));
+            }
+            new Chart(document.getElementById("line"), {
+                type: "line",
+                data: { labels, datasets: [{ data: series, borderColor: "#163a56", backgroundColor: "rgba(22,58,86,.12)", fill: true, tension: 0.3, pointRadius: 0 }] },
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+
+            main.querySelectorAll("[data-del]").forEach((btn) => {
+                btn.onclick = () => {
+                    m.tracks = m.tracks.filter((x) => x.id !== btn.dataset.del);
+                    Habona.saveDb(db);
+                    location.reload();
+                };
+            });
+        }
+    </script>
+</body>
+</html>

@@ -3,37 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>תכנון תמהיל — משכנתא חכמה</title>
+    <title>יועץ תמהיל — משכנתא חכמה</title>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-    <header class="topbar">
-        <div class="topbar-inner">
-            <a class="brand" href="/app.html"><span class="brand-mark">מ</span> משכנתא חכמה</a>
-            <a class="btn btn-ghost" href="/app.html">חזרה</a>
-        </div>
-    </header>
-    <main class="page">
-        <div class="wrap" style="max-width:760px">
-            <h1>תכנון תמהיל</h1>
-            <p class="lede">כמה שאלות על החיים, הנכס והיכולת הכלכלית. התמהיל שומר על כללי בנק ישראל: לפחות כשליש קבוע, ולא יותר משני שלישים משתנה כולל פריים.</p>
-
-            <form class="card" id="quiz">
+    <div class="shell" id="shell">
+        <main class="content">
+            <div class="page-head">
+                <h1>יועץ תמהיל משכנתא</h1>
+                <p>שאלון קצר. התמהיל שומר על כללי בנק ישראל.</p>
+            </div>
+            <form class="panel" id="quiz">
                 <div class="progress" id="progress"></div>
                 <div class="form-grid" id="fields"></div>
                 <div class="step-nav">
-                    <button class="btn btn-ghost" type="button" id="back">חזרה</button>
+                    <button class="btn" type="button" id="back">חזרה</button>
                     <button class="btn btn-navy" type="button" id="next">המשך</button>
                 </div>
             </form>
-
             <section id="result" class="hidden"></section>
-        </div>
-    </main>
+        </main>
+    </div>
     <script src="/js/habona.js"></script>
+    <script src="/js/shell.js"></script>
     <script>
-        Habona.requireAuth();
+        mountShell("plan");
         const steps = [
             [
                 { id: "goal", label: "מה המטרה?", type: "select", options: [["first","דירה ראשונה"],["replace","החלפת דירה"],["refi","מחזור משכנתא קיימת"],["invest","השקעה"]] },
@@ -59,68 +54,39 @@
         const answers = {};
         let step = 0;
         const fields = document.getElementById("fields");
-        const progress = document.getElementById("progress");
-
         function render() {
-            progress.textContent = `שאלה ${step + 1} מתוך ${steps.length}`;
+            document.getElementById("progress").textContent = `שאלה ${step + 1} מתוך ${steps.length}`;
             fields.innerHTML = steps[step].map((field) => {
                 if (field.type === "select") {
                     const opts = field.options.map(([v,l]) => `<option value="${v}">${l}</option>`).join("");
                     return `<div><label>${field.label}</label><select name="${field.id}">${opts}</select></div>`;
                 }
-                return `<div><label>${field.label}</label><input name="${field.id}" type="number" min="0" required></div>`;
+                return `<div><label>${field.label}</label><input name="${field.id}" type="number" min="0"></div>`;
             }).join("");
             document.getElementById("back").style.visibility = step === 0 ? "hidden" : "visible";
         }
-
         function collect() {
             fields.querySelectorAll("input,select").forEach((el) => { answers[el.name] = el.value; });
         }
-
-        document.getElementById("next").addEventListener("click", () => {
+        document.getElementById("next").onclick = () => {
             collect();
-            if (step < steps.length - 1) {
-                step += 1;
-                render();
-                return;
-            }
+            if (step < steps.length - 1) { step += 1; render(); return; }
             const mix = Habona.recommendMix(answers);
             document.getElementById("quiz").classList.add("hidden");
             const box = document.getElementById("result");
             box.classList.remove("hidden");
             box.innerHTML = `
                 <div class="kpis">
-                    <div class="kpi"><span>סכום משכנתא</span><strong>${Habona.money(mix.loan)}</strong></div>
-                    <div class="kpi"><span>החזר חודשי משוער</span><strong>${Habona.money(mix.payment)}</strong></div>
-                    <div class="kpi"><span>יחס החזר להכנסה</span><strong>${mix.pti.toFixed(0)}%</strong></div>
-                    <div class="kpi"><span>תקופה</span><strong>${mix.years} שנים</strong></div>
+                    <div class="kpi navy"><div class="label">החזר חודשי</div><div class="value">${Habona.money(mix.payment)}</div></div>
+                    <div class="kpi"><div class="label">סכום משכנתא</div><div class="value">${Habona.money(mix.loan)}</div></div>
+                    <div class="kpi"><div class="label">יחס החזר</div><div class="value">${mix.pti.toFixed(0)}%</div></div>
                 </div>
-                <div class="card">
-                    <h2>התמהיל המוצע</h2>
-                    ${mix.tracks.map((track) => `
-                        <div class="mix-row">
-                            <div>
-                                <strong>${track.name} · ${track.share}%</strong>
-                                <div class="meta">${Habona.money(track.amount)} · ${Habona.pct(track.rate)} · ${track.note}</div>
-                                <div class="bar"><span style="width:${track.share}%"></span></div>
-                            </div>
-                        </div>
-                    `).join("")}
+                <div class="panel">
+                    ${mix.tracks.map((track) => `<div class="mix-row"><strong>${track.name} · ${track.share}%</strong><div class="muted">${Habona.money(track.amount)} · ${Habona.pct(track.rate)} · ${track.note}</div><div class="bar"><span style="width:${track.share}%"></span></div></div>`).join("")}
                 </div>
-                <div class="card">
-                    <h2>למה ככה</h2>
-                    ${mix.reasons.map((r) => `<p class="meta" style="margin-bottom:8px">• ${r}</p>`).join("")}
-                    <p class="meta">המידע אינו ייעוץ משכנתאות. ריביות לפי מצב שוק לדוגמה מתאריך ${Habona.MARKET.asOf}.</p>
-                </div>
-                <a class="btn btn-navy" href="/app.html">חזרה לאזור האישי</a>
             `;
-            localStorage.setItem("habonaMix", JSON.stringify(mix));
-        });
-        document.getElementById("back").addEventListener("click", () => {
-            collect();
-            step = Math.max(0, step - 1);
-            render();
-        });
+        };
+        document.getElementById("back").onclick = () => { collect(); step = Math.max(0, step - 1); render(); };
         render();
     </script>
 </body>

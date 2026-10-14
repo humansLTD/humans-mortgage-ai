@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מדדים — משכנתא חכמה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+    <div class="shell" id="shell">
+        <main class="content">
+            <div class="page-head">
+                <h1>מדדים</h1>
+                <p>מצב שוק לדוגמה, לתזמון עדכון עוגנים</p>
+            </div>
+            <div class="kpis">
+                <div class="kpi navy"><div class="label">פריים</div><div class="value" id="prime"></div></div>
+                <div class="kpi"><div class="label">ריבית בנק ישראל</div><div class="value" id="boi"></div></div>
+                <div class="kpi"><div class="label">עוגן לא צמוד</div><div class="value" id="anchor"></div></div>
+            </div>
+            <div class="panel">
+                <p class="muted">פריים מתעדכן כשבנק ישראל משנה ריבית. מסלול משתנה מתעדכן רק ביום העוגן החוזי.</p>
+            </div>
+        </main>
+    </div>
+    <script src="/js/habona.js"></script>
+    <script src="/js/shell.js"></script>
+    <script>
+        mountShell("stats");
+        document.getElementById("prime").textContent = Habona.pct(Habona.MARKET.prime);
+        document.getElementById("boi").textContent = Habona.pct(Habona.MARKET.boiRate);
+        document.getElementById("anchor").textContent = Habona.pct(Habona.MARKET.anchors.variable_unlinked.rate);
+    </script>
+</body>
+</html>
