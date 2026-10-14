@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הבונה - מפקח משכנתא AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Rubik', sans-serif; background-color: #f8fafc; }
+        .bg-brand-navy { background-color: #14375b; }
+        .text-brand-navy { color: #14375b; }
+        .bg-brand-accent { background-color: #e9cbb8; }
+        .border-brand-accent { border-color: #e9cbb8; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- סרגל עליון -->
+    <header class="bg-brand-navy text-white p-4 shadow-md">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl font-bold tracking-wide">הבונה</span>
+                <span class="bg-brand-accent text-brand-navy text-xs font-bold px-2 py-0.5 rounded-full">מפקח AI</span>
+            </div>
+            <nav class="flex gap-4 text-sm font-medium">
+                <a href="#" class="text-brand-accent font-bold border-b-2 border-brand-accent pb-1">ניהול משכנתא</a>
+                <a href="#" class="hover:text-brand-accent transition">תמהיל חדש</a>
+                <a href="#" class="hover:text-brand-accent transition">התראות מחזור</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- תוכן מרכזי -->
+    <main class="max-w-6xl mx-auto p-6 space-y-6">
+
+        <!-- אזור העלאת דוח יתרות -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-xl font-bold text-brand-navy mb-2">📄 סריקת משכנתא אוטומטית</h2>
+            <p class="text-slate-600 text-sm mb-4">העלה דוח יתרות לסילוק (PDF או תמונה) וה-AI שלנו יחלץ את הנתונים ויבנה עבורך את הלוח בקרה.</p>
+            
+            <div id="drop-zone" class="border-2 border-dashed border-brand-accent bg-amber-50/30 rounded-xl p-8 text-center cursor-pointer hover:bg-amber-50/60 transition">
+                <div class="text-4xl mb-2">📤</div>
+                <p class="font-bold text-brand-navy">לחץ לבחירת קובץ או גרור לכאן את דוח היתרות לסילוק</p>
+                <p class="text-xs text-slate-500 mt-1">תומך בקובצי PDF, PNG, JPG (עד 10MB)</p>
+                <input type="file" id="file-input" class="hidden" accept=".pdf,image/*">
+            </div>
+        </section>
+
+        <!-- כרטיסי מדדים מרכזיים -->
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <span class="text-xs text-slate-500 font-medium">יתרת חוב כוללת</span>
+                <div class="text-2xl font-bold text-brand-navy mt-1">₪1,120,000</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <span class="text-xs text-slate-500 font-medium">החזר חודשי נוכחי</span>
+                <div class="text-2xl font-bold text-brand-navy mt-1">₪5,480</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <span class="text-xs text-slate-500 font-medium">פוטנציאל חיסכון במחזור</span>
+                <div class="text-2xl font-bold text-emerald-600 mt-1">₪64,200</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <span class="text-xs text-slate-500 font-medium">מדד בריאות משכנתא</span>
+                <div class="text-2xl font-bold text-brand-navy mt-1 flex items-center justify-between">
+                    <span>82/100</span>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-normal">תקין</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                alert('הקובץ "' + e.target.files[0].name + '" התקבל בהצלחה! בשלב הבא נחבר את אלגוריתם ה-AI לפענוח הנתונים.');
+            }
+        });
+    </script>
+</body>
+</html>
