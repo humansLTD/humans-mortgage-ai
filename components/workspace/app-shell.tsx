@@ -19,6 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!sessionStorage.getItem("authPhone") && !sessionStorage.getItem("authEmail")) {
@@ -26,7 +27,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
     setEmail(sessionStorage.getItem("authEmail") || sessionStorage.getItem("authPhone") || "");
+    setReady(true);
   }, [router]);
+
+  if (!ready) {
+    return <div className="min-h-screen bg-background" />;
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
